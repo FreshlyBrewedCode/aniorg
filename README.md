@@ -40,6 +40,7 @@
   - [Basic usage](#basic-usage)
   - [Config file](#config-file)
   - [Using templates](#using-templates)
+  - [Subtitles](#subtitles)
 - [License](#license)
 
 
@@ -115,6 +116,21 @@ env:
 
 The config file can be a `yaml`, `json`, or `js` file. To be auto discovered it should be called `.aniorgrc.<ext>`. You can also explicity pass the path to the config file using the `--config` flag.
 
+Using a `js` file gives you the most flexibility. You could e.g. have a base configuration and import it in another config file:
+```js
+// .aniorgrc.js
+const baseConfig = require("./baseConfig.js");
+
+// Use base config but override a specific variable
+module.exports = {
+  ...baseConfig,
+  env: {
+    SOME_VAR_USED_IN_BASE_CONFIG: "new value"
+  }
+}
+``` 
+See the subtitles section below for a practical example.
+
 ### Using templates
 
 Aniorg uses a template for organizing media files. The template is a [mustache][mustache-url] template that determines the new path of each media file. The template can inject meta information for the current anime and file:
@@ -135,6 +151,58 @@ Aniorg uses a template for organizing media files. The template is a [mustache][
 \*some strings include "simplified" (no special characters) and "safe" (no special characters and whitespaces) variants e.g. `titleSimple` and `titleSafe`.
 
 \*\*some numbers include zero padded variants (i.e. `01`, `001`) e.g. `episode0`, `episode00`
+
+### Subtitles
+
+Sometimes you may want to also move subtitle files (or any other additional file) to the new path. Aniorg does not provide a specific option for that but you could just run aniorg with a different glob and template. You could even create a custom config for subs that you can reference using the `--config` flag whenever you want to organize subs. If you use a `js` config file you can even share a common config between media and substile files:
+```js
+// common.js
+// common config file
+const dirTemplate =
+  "{{env.ANIME}}/{{title}}";
+const fileNameTemplate =
+  "{{title}} - {{episode0}}";
+
+module.exports = {
+  dirTemplate,
+  fileNameTemplate,
+  template: `${dirTemplate}/${fileNameTemplate}.{{ext}}`,
+  glob: "*.{mkv,mp4}",
+};
+```
+
+```js
+// .aniorgrc.js
+// main config file for media
+module.exports = require("./common");
+```
+
+```js
+// subs.js
+// config file for (japanese) subtitles
+const common = require("./common");
+const { dirTemplate, fileNameTemplate } = common;
+
+module.exports = {
+  ...common,
+  template: `${dirTemplate}/${fileNameTemplate}.{{env.SUBS_LANG}}.{{ext}}`,
+  glob: "*.{ass,srt}",
+  env: {
+    ...common.env,
+    SUBS_LANG: "jp",
+  },
+};
+```
+If you look at `subs.js` you can see that the the template is based on the template defined in `common.js`.
+
+Then when you organize your media just run aniorg two times:
+```bash
+# organize media
+aniorg --mode copy <anilist id> 
+
+# organize subs
+aniorg --config ./subs.js --mode copy <anilist id>
+```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
