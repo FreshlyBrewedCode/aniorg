@@ -1,0 +1,32 @@
+{
+  "name": "aniorg",
+  "version": "1.0.0",
+  "description": "A super simple CLI for organizing your anime collection",
+  "main": "src/index.js",
+  "bin": {
+    "aniorg": "src/index.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "semantic-release": "semantic-release"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "anilist-node": "^1.12.1",
+    "chalk": "4",
+    "cli-progress": "^3.11.2",
+    "cli-table": "^0.3.11",
+    "commander": "^9.4.1",
+    "cosmiconfig": "^7.0.1",
+    "cp-file": "9",
+    "glob": "^8.0.3",
+    "inquirer": "^8.0.0",
+    "move-file": "2",
+    "mustache": "^4.2.0"
+  },
+  "devDependencies": {
+    "semantic-release": "^19.0.5"
+  }
+}
