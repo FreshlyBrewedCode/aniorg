@@ -16,6 +16,12 @@ const cp = require("cp-file");
 const mv = require("move-file");
 const { link, mkdir } = require("fs").promises;
 const cliProgress = require("cli-progress");
+const {
+  tableStyle,
+  numberView,
+  stringView,
+  parseKeyValue,
+} = require("./utils");
 
 program
   .version("1.0.0")
@@ -35,15 +41,27 @@ program
     "glob pattern used to find episode files"
   )
   .option("-t, --template <template>", "template used to rename files")
-  .argument("[id]", "id of the anime to rename")
-  .action(async (id, options) => {
+  .option(
+    "-o, --options <key=value...>",
+    "options used in the template",
+    parseKeyValue,
+    {}
+  )
+  .option(
+    "-a, --anilist",
+    "anilist id used to fetch meta data for the template"
+  )
+  .action(async (options) => {
     const {
       config: configPath,
       search: searchQuery,
       info,
       mode,
       silent,
+      anilist,
     } = options;
+
+    const id = anilist;
 
     // Verbose logging function
     const verbose = (msg) => {
@@ -66,36 +84,41 @@ program
 
     // Load config
     const config = await loadConfig(configPath, verbose);
-    if (config === undefined) {
-      console.log(
-        chalk.red(
-          "No config file found. Create a aniorgrc config file or pass a path to one with the --config flag"
-        )
-      );
-      return;
-    }
 
     // Apply config
     const globPattern = options.glob || config.glob;
     const template = options.template || config.template;
 
-    // Get anime info by id
-    if (id === undefined) {
+    if (globPattern === undefined) {
       console.log(
         chalk.red(
-          "No anilist id specified. Use the --search flag or the anilist website to search for your anime and get the id"
+          "No glob pattern specified. Create a config file or use the --glob option."
         )
       );
       return;
     }
-    const anime = await Anilist.media.anime(Number(id));
-    if (anime === undefined) {
-      console.log(chalk.red(`No anime found with id ${id}`));
+
+    if (template === undefined) {
+      console.log(
+        chalk.red(
+          "No template specified. Create a config file or use the --template option."
+        )
+      );
       return;
     }
-    verbose(
-      `Using anime ${id}: ${anime.title.english || anime.title.romaji}`
-    );
+
+    let anime = {};
+    // Get anime info by id
+    if (id !== undefined) {
+      anime = await Anilist.media.anime(Number(id));
+      if (anime === undefined) {
+        console.log(chalk.red(`No anime found with id ${id}`));
+        return;
+      }
+      verbose(
+        `Using anime ${id}: ${anime.title.english || anime.title.romaji}`
+      );
+    }
 
     // Load files
     verbose(`Loading files with glob pattern ${globPattern}`);
@@ -112,13 +135,12 @@ program
       verbose(`Files: ${JSON.stringify(fileNames, null, 2)}`);
     }
 
-    if (files.length !== anime.episodes) {
+    if (anime.episodes !== undefined && files.length !== anime.episodes) {
       console.log(
         chalk.yellow(
           `Number of files (${files.length}) does not match number of episodes (${anime.episodes})`
         )
       );
-      return;
     }
 
     // New names
@@ -128,13 +150,14 @@ program
         ...numberView("episode", i + 1),
         ...numberView("season", options.season),
         filename: fileNames[i],
-        title: anime.title.english || anime.title.romaji,
-        ...stringView("titleEnglish", anime.title.english),
-        ...stringView("titleRomaji", anime.title.romaji),
-        titleNative: anime.title.native,
+        title: anime.title?.english || anime.title?.romaji,
+        ...stringView("titleEnglish", anime.title?.english),
+        ...stringView("titleRomaji", anime.title?.romaji),
+        titleNative: anime.title?.native,
         year: anime.seasonYear,
         ext: path.extname(f).slice(1),
-        env: { ...(config.env ?? {}), ...process.env },
+        env: { ...(config?.env ?? {}), ...process.env },
+        ...options.options,
       };
       return mustache.render(template, view, undefined, {
         escape: (v) => v,
@@ -243,46 +266,6 @@ const loadConfig = async (configPath, verbose) => {
     verbose(`Failed to load config: ${e}`);
     return undefined;
   }
-};
-
-const tableStyle = {
-  chars: {
-    top: "",
-    "top-mid": "",
-    "top-left": "",
-    "top-right": "",
-    bottom: "",
-    "bottom-mid": "",
-    "bottom-left": "",
-    "bottom-right": "",
-    left: "",
-    "left-mid": "",
-    mid: "",
-    "mid-mid": "",
-    right: "",
-    "right-mid": "",
-    middle: " ",
-  },
-  style: { "padding-left": 0, "padding-right": 0 },
-};
-
-// Include zero padded variants of the number
-const numberView = (key, value) => {
-  return {
-    [key]: value,
-    [key + "0"]: value < 10 ? "0" + value : value,
-    [key + "00"]:
-      value < 10 ? "00" + value : value < 100 ? "0" + value : value,
-  };
-};
-
-// Include variant without special characters
-const stringView = (key, value) => {
-  return {
-    [key]: value,
-    [key + "Simple"]: value.replace(/[^a-zA-Z0-9\s]/g, ""),
-    [key + "Safe"]: value.replace(/[^a-zA-Z0-9]/g, "").replace(/\s/g, "_"),
-  };
 };
 
 program.parse(process.argv);

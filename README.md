@@ -40,6 +40,8 @@
   - [Basic usage](#basic-usage)
   - [Config file](#config-file)
   - [Using templates](#using-templates)
+  - [Fetching meta data from Anilist](#fetching-meta-data-from-anilist)
+  - [Manually passing options](#manually-passing-options)
   - [Subtitles](#subtitles)
 - [License](#license)
 
@@ -74,30 +76,29 @@ npm install -g aniorg
 
 You can run `aniorg --help` to get an overview of the available options:
 ```
-Usage: aniorg [options] [id]
-
-Arguments:
-  id                          id of the anime to rename
+Usage: aniorg [options]
 
 Options:
-  -V, --version               output the version number
-  -c, --config <path>         path to config file
-  --verbose                   verbose output (default: false)
-  -s, --search <query>        search for an anime on anilist
-  -i, --info <id>             get anime info by id
-  --season <season index>     the season used for the template (default: 1)
-  --silent                    don't ask for confirmation (default: false)
-  -m --mode [copy|move|link]  the mode used to rename the file (default: "move")
-  -g, --glob <pattern>        glob pattern used to find episode files
-  -t, --template <template>   template used to rename files
-  -h, --help                  display help for command
+  -V, --version                 output the version number
+  -c, --config <path>           path to config file
+  --verbose                     verbose output (default: false)
+  -s, --search <query>          search for an anime on anilist
+  -i, --info <id>               get anime info by id
+  --season <season index>       the season used for the template (default: 1)
+  --silent                      don't ask for confirmation (default: false)
+  -m --mode [copy|move|link]    the mode used to rename the file (default: "move")
+  -g, --glob <pattern>          glob pattern used to find episode files
+  -t, --template <template>     template used to rename files
+  -o, --options <key=value...>  options used in the template (default: {})
+  -a, --anilist                 anilist id used to fetch meta data for the template
+  -h, --help                    display help for command
 ```
 
 ### Basic usage
 
 You run aniorg from within your unorganized media directory. All configuration can be passed in as options:
 ```
-aniorg --glob "*.mkv" --template "/anime/{{title}}/{{title}} {{episode}}.{{ext}}" --mode copy [Anilist ID] 
+aniorg --glob "*.mkv" --template "/anime/{{title}}/{{title}} {{episode}}.{{ext}}" --mode copy --anilist <id> 
 ```
 
 ### Config file
@@ -152,6 +153,46 @@ Aniorg uses a template for organizing media files. The template is a [mustache][
 
 \*\*some numbers include zero padded variants (i.e. `01`, `001`) e.g. `episode0`, `episode00`
 
+### Fetching meta data from Anilist
+
+Since I built aniorg mainly for organizing anime, I added the option to fetch meta information from Anilist. You can search for a specific anime using the `--search` flag:
+```
+aniorg --search "K on"
+ID         English                 Romaji                          Native                                            
+5680       K-ON!                   K-ON!                           けいおん!                                             
+14467      K                       K                               K                                                 
+7791       K-ON! Season 2          K-ON!!                          けいおん!!                                            
+9617       K-ON!: The Movie        K-ON! Movie                     映画けいおん！                                           
+6862       K-ON!: Live House!      K-ON!: Live House!              けいおん! ライブハウス!                                     
+109670     N/A                     K: Seven Stories - The Idol K   K Seven Stories ザ・アイドルK                           
+9203       K-ON! Season 2 Shorts   K-ON!!: Ura-On!!                うらおん!!                                            
+9734       K-ON! Season 2: Plan!   K-ON!!: Keikaku!                けいおん!! 計画!                                        
+115437     N/A                     K×Drop!!                        K×Drop!!                                          
+7017       K-ON! Season 1 Shorts   K-ON!: Ura-On!                  うらおん!
+```
+it will show you the 10 top results and you can copy the id of the matching anime.
+
+Then when you run aniorg for your media files you can pass the id:
+```
+aniorg --mode copy --anilist 5680 
+```
+
+This will make the meta information for the show available in your template:
+```
+{{title}} -> K-ON! 
+```
+
+### Manually passing options
+
+You don't have to pass an Anilist id. You can also provide the template options manually:
+```
+aniorg --mode copy --options "title=K-ON!" year=2009
+```
+```
+{{title}} -> K-ON!
+{{year}} -> 2009
+```
+
 ### Subtitles
 
 Sometimes you may want to also move subtitle files (or any other additional file) to the new path. Aniorg does not provide a specific option for that but you could just run aniorg with a different glob and template. You could even create a custom config for subs that you can reference using the `--config` flag whenever you want to organize subs. If you use a `js` config file you can even share a common config between media and substile files:
@@ -198,10 +239,10 @@ If you look at `subs.js` you can see that the the template is based on the templ
 Then when you organize your media just run aniorg two times:
 ```bash
 # organize media
-aniorg --mode copy <anilist id> 
+aniorg --mode copy -a <id> 
 
 # organize subs
-aniorg --config ./subs.js --mode copy <anilist id>
+aniorg --config ./subs.js --mode copy -a <id> 
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
