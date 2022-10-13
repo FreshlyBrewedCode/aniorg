@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.1.0](https://github.com/FreshlyBrewedCode/aniorg/compare/v1.0.0...v1.1.0) (2022-10-13)
+
+
+### Features
+
+* add `options` flag ([8e49377](https://github.com/FreshlyBrewedCode/aniorg/commit/8e49377b6648bba1dd85bb52c98f2b4b0ea9481e))
+
 # 1.0.0 (2022-10-13)
 
 
