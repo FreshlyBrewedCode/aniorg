@@ -24,7 +24,7 @@ const {
 } = require("./utils");
 
 program
-  .version("1.0.0")
+  .version(require("../package.json").version)
   .option("-c, --config <path>", "path to config file", undefined)
   .option("--verbose", "verbose output", false)
   .option("-s, --search <query>", "search for an anime on anilist")
