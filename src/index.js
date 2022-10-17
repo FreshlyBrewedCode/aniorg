@@ -48,7 +48,7 @@ program
     {}
   )
   .option(
-    "-a, --anilist",
+    "-a, --anilist <id>",
     "anilist id used to fetch meta data for the template"
   )
   .action(async (options) => {
