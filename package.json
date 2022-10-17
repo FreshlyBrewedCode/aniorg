@@ -1,6 +1,6 @@
 {
   "name": "aniorg",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "A super simple CLI for organizing your anime collection",
   "main": "src/index.js",
   "bin": {
